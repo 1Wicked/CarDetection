@@ -70,6 +70,21 @@ int main() {
 	createTrackbar("Close 2", "Options", &close_size, 30, Morphology_Operations);
 	Morphology_Operations(0, 0);
 
+	
+	SimpleBlobDetector::Params params;
+	params.filterByColor = true;
+	params.blobColor = 255;
+	params.filterByArea = true;
+	params.minArea = 50;
+	params.maxArea = 1000000000;
+	params.filterByInertia = true;
+	params.minInertiaRatio = 0.25;
+	params.maxInertiaRatio = 1;
+	params.filterByCircularity = false;
+	params.filterByConvexity = false;
+	Ptr<SimpleBlobDetector> detector = SimpleBlobDetector::create(params);
+	vector<KeyPoint> keypoints;
+
 	int key_pressed = 0;
 	Mat frame;
 	while(key_pressed != 27) {
@@ -104,10 +119,30 @@ int main() {
 		morphologyEx(frame_morph, frame_morph, MORPH_CLOSE, close_element);
 		imshow("Binarized difference after morphological operations", frame_morph);
 
+		/// Detecting and marking cars on current frame		
+
+		
+		Mat frame_blob;
+		frame_morph.copyTo(frame_blob);
+		detector->detect(frame_blob, keypoints);
+		cout << "The size of keypoints vector is: " << keypoints.size() << endl;
+		drawKeypoints(frame_blob, keypoints, frame_blob, Scalar(0, 0, 255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+		imshow("Detected cars", frame_blob);
+
+		Mat frame_blob_video;
+		frame.copyTo(frame_blob_video);
+		drawKeypoints(frame_blob_video, keypoints, frame_blob_video, Scalar(0, 0, 255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+		imshow("Detected cars on video", frame_blob_video);
+
+		//keypoints.clear();
+
 		/// Infinite loop until ESC is pressed
 		key_pressed = waitKey(1);
 	}
 
+	delete detector;
+	//delete[] keypoints;
+	keypoints.clear();
 	video.release();
 	return 0;
 }
